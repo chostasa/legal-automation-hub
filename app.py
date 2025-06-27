@@ -5,17 +5,17 @@ import zipfile
 import io
 import streamlit as st
 
-st.sidebar.title("📂 Legal Automation Hub")
+# === Simple login ===
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
 
-tool = st.sidebar.radio(
-    "🧰 Choose Tool",
-    [
-        "🚧 Complaint (In Progress)",
-        "🚧 HIPAAs (In Progress)",
-        "🚧 FOIAs (In Progress)",
-        "🚧 Subpoenas (In Progress)"
-    ]
-)
+if not st.session_state.authenticated:
+    password = st.text_input("Enter Password", type="password")
+    if password == st.secrets["password"]:
+        st.session_state.authenticated = True
+        st.experimental_rerun()
+    else:
+        st.stop()
 
 st.title(tool)  # Optional: display selected tool name as header
 
@@ -48,6 +48,19 @@ st.title("⚖️ Legal Automation Hub")
 # Sidebar Navigation
 st.sidebar.title("Tools")
 page = st.sidebar.radio("Select a Tool", ["Demands", "FOIA Requests", "Instructions & Support"])
+
+# === Sidebar Tools ===
+with st.sidebar:
+    st.markdown("### 🗂️ Legal Automation Hub")
+    tool = st.radio("Select a Tool", [
+        "🚧 Complaint (In Progress)",
+        "🚧 HIPAAs (In Progress)",
+        "🚧 FOIAs (In Progress)",
+        "🚧 Subpoenas (In Progress)",
+        "📂 Demands",
+        "📑 FOIA Requests",
+        "📖 Instructions & Support"
+    ])
 
 # --- Demands Section ---
 if page == "Demands":
