@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 import re
 from datetime import datetime
 from docx import Document
@@ -7,11 +9,15 @@ from openai import OpenAI
 from docx.table import _Cell
 from docx.text.paragraph import Paragraph
 
-# === Load API Key and Initialize Client ===
-with open("Open AI Secret Key.txt", "r") as f:
-    api_key = f.read().strip()
+# === Load API Key from environment variable ===
 
-client = OpenAI(api_key=api_key)
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("❌ OPENAI_API_KEY environment variable not set.")
+
+def generate_with_openai(prompt):
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    ...
 
 # === Prompt Guidelines ===
 NO_HALLUCINATION_NOTE = """

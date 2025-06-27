@@ -1,16 +1,17 @@
 import pandas as pd
+from dotenv import load_dotenv
+load_dotenv()
 from docx import Document
 from openai import OpenAI
 import os
 from datetime import date
 
-# === CONFIG ===
-API_KEY_FILE = 'Open AI Secret Key.txt'
+# === Load API Key from environment variable ===
+import os
 
-# === LOAD API KEY ===
-def load_api_key():
-    with open(API_KEY_FILE, "r") as f:
-        return f.read().strip()
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("❌ OPENAI_API_KEY environment variable not set.")
 
 # === PROMPT BUILDER ===
 def build_prompt(case_synopsis, potential_requests, explicit_instructions, case_type, facility, defendant_role):
@@ -73,7 +74,7 @@ Only return the list.
 
 # === SYNOPSIS GENERATOR ===
 def generate_synopsis(case_synopsis):
-    client = OpenAI(api_key=load_api_key())
+    client = OpenAI(api_key=api_key)
     prompt = f"""
 Summarize the following legal case background in 2 professional sentences explaining what happened and the resulting harm or damages. Do not include any parties' names or personal identifiers:
 
@@ -89,7 +90,7 @@ Summarize the following legal case background in 2 professional sentences explai
 # === CALL OPENAI ===
 def generate_bullet_points(case_synopsis, potential_requests, explicit_instructions, case_type, facility, defendant_role):
     prompt = build_prompt(case_synopsis, potential_requests, explicit_instructions, case_type, facility, defendant_role)
-    client = OpenAI(api_key=load_api_key())
+    client = OpenAI(api_key=api_key)
     response = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
