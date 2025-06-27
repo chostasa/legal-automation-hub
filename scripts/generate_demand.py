@@ -1,6 +1,4 @@
 import os
-from dotenv import load_dotenv
-load_dotenv()
 import re
 from datetime import datetime
 from docx import Document
@@ -8,15 +6,26 @@ from openpyxl import load_workbook
 from openai import OpenAI
 from docx.table import _Cell
 from docx.text.paragraph import Paragraph
+import streamlit as st
 
-# === Load API Key from environment variable ===
-
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    raise ValueError("❌ OPENAI_API_KEY environment variable not set.")
+api_key = st.secrets.OPENAI_API_KEY
+client = OpenAI(api_key=api_key)
 
 def generate_with_openai(prompt):
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "..."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=1400,
+            temperature=0.4
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"OpenAI API Error: {e}")
+        return "[Error generating content]"
     ...
 
 # === Prompt Guidelines ===
@@ -62,23 +71,6 @@ A lay jury will empathize with Jane. Many people have experienced close calls wi
 
 Based on similar verdicts and settlements for cases involving traumatic injuries, we are authorized to demand the sum of $100,000.00 (One Hundred Thousand Dollars) to resolve this matter. If we do not receive a timely response, we are prepared to proceed with litigation.
 '''
-
-# === OpenAI Request Handler ===
-def generate_with_openai(prompt):
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a senior litigation attorney drafting demand letters with formal, confident, and legally persuasive tone. Use active voice, frame liability using duty/breach/causation/harm, and eliminate repetition, vague language, or passive phrasing."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=1400,
-            temperature=0.4
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"OpenAI API Error: {e}")
-        return "[Error generating content]"
 
 # === Section Generators ===
 def generate_brief_synopsis(summary, full_name):
