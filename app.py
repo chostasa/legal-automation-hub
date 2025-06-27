@@ -5,6 +5,20 @@ import zipfile
 import io
 import streamlit as st
 
+st.sidebar.title("📂 Legal Automation Hub")
+
+tool = st.sidebar.radio(
+    "🧰 Choose Tool",
+    [
+        "🚧 Complaint (In Progress)",
+        "🚧 HIPAAs (In Progress)",
+        "🚧 FOIAs (In Progress)",
+        "🚧 Subpoenas (In Progress)"
+    ]
+)
+
+st.title(tool)  # Optional: display selected tool name as header
+
 # Password protection
 def check_password():
     def password_entered():
