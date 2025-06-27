@@ -3,6 +3,27 @@ import pandas as pd
 import os
 import zipfile
 import io
+import streamlit as st
+
+# Password protection
+def check_password():
+    def password_entered():
+        if st.session_state["password"] == st.secrets["APP_PASSWORD"]:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]
+        else:
+            st.session_state["password_correct"] = False
+
+
+    if "password_correct" not in st.session_state:
+        st.text_input("Enter password:", type="password", on_change=password_entered, key="password")
+        st.stop()
+    elif not st.session_state["password_correct"]:
+        st.text_input("Enter password:", type="password", on_change=password_entered, key="password")
+        st.error("❌ Incorrect password")
+        st.stop()
+
+check_password()
 
 from scripts.generate_demand import run as run_demand
 from scripts.generate_foia import run as run_foia
