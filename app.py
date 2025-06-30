@@ -1,11 +1,8 @@
 import streamlit as st
 st.set_page_config(page_title="Legal Automation Hub", layout="wide")
 
-import sys
-sys.path.append("scripts")
-from generate_foia import run_foia
-from generate_demand import run_demand
-
+from scripts.generate_foia import run_foia
+from scripts.generate_demand import run_demand
 
 import pandas as pd
 import os
