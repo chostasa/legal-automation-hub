@@ -61,8 +61,8 @@ with st.sidebar:
     st.markdown("### ⚖️ Legal Automation Hub")
 tool = st.radio("Choose Tool", [
     "📖 Instructions & Support",
+"📄 Batch Doc Generator",
     "📬 FOIA Requests",
-    "📄 Batch Doc Generator",
 "📂 Demands",
     "🚧 Complaint (In Progress)",
     "🚧 Subpoenas (In Progress)",
