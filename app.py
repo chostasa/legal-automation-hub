@@ -116,6 +116,8 @@ if tool == "📄 Batch Doc Generator":
 
                 st.success(f"✅ Saved as {final_filename}")
 
+   [previous script unchanged up to this point]
+
     elif template_mode == "Select a Saved Template":
         st.subheader("📂 Select a Saved Template")
         excluded_templates = {"foia_template.docx", "demand_template.docx"}
@@ -138,9 +140,8 @@ if tool == "📄 Batch Doc Generator":
         output_name_format = st.text_input("Enter filename format (e.g., HIPAA Notice ({{Client Name}}))")
         generate = st.button("Generate Documents")
 
-        if generate and excel_file and output_name_format:
+        if excel_file:
             df = pd.read_excel(excel_file)
-
             if df.empty:
                 st.error("⚠️ Your Excel file has no rows. Please check the file and try again.")
                 st.stop()
@@ -156,6 +157,41 @@ if tool == "📄 Batch Doc Generator":
                 preview_filename = preview_filename.replace(f"{{{{{key}}}}}", str(val))
             st.markdown("**📄 Preview Filename for First Row:**")
             st.code(preview_filename)
+
+            # Optional: Preview document for first row
+            if st.checkbox("👁️ Preview generated document for first row"):
+                doc_preview = Document(template_path)
+                row = df.iloc[0]
+                for para in doc_preview.paragraphs:
+                    for key, val in row.items():
+                        if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
+                            val = val.strftime("%-m/%-d/%Y")
+                        placeholder = f"{{{{{key}}}}}"
+                        for run in para.runs:
+                            if placeholder in run.text:
+                                run.text = run.text.replace(placeholder, str(val))
+
+                for table in doc_preview.tables:
+                    for cell in table._cells:
+                        for para in cell.paragraphs:
+                            for run in para.runs:
+                                for key, val in row.items():
+                                    if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
+                                        val = val.strftime("%-m/%-d/%Y")
+                                    placeholder = f"{{{{{key}}}}}"
+                                    if placeholder in run.text:
+                                        run.text = run.text.replace(placeholder, str(val))
+
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp_doc:
+                    doc_preview.save(tmp_doc.name)
+                    tmp_doc.seek(0)
+                    st.download_button("📥 Download Preview Document", tmp_doc.read(), file_name="Preview.docx")
+
+        if generate and excel_file and output_name_format:
+            df = pd.read_excel(excel_file)
+            if df.empty:
+                st.error("⚠️ Your Excel file has no rows. Please check the file and try again.")
+                st.stop()
 
             left, right = "{{", "}}"
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -209,113 +245,4 @@ if tool == "📄 Batch Doc Generator":
                     file_name="word_documents.zip",
                     mime="application/zip"
                 )
-
-    elif template_mode == "Template Options":
-        st.subheader("⚙️ Template Options")
-        excluded_templates = {"foia_template.docx", "demand_template.docx"}
-        available_templates = [
-            f for f in os.listdir(TEMPLATE_FOLDER)
-            if f.endswith(".docx") and f not in excluded_templates
-        ]
-
-        search_query = st.text_input("🔍 Search for template to manage").lower()
-        filtered_templates = [f for f in available_templates if search_query in f.lower()]
-
-        if filtered_templates:
-            template_choice = st.selectbox("Choose Template to Rename/Delete", filtered_templates)
-            template_path = os.path.join(TEMPLATE_FOLDER, template_choice)
-
-            st.subheader("✏️ Rename Template")
-            new_template_name = st.text_input("New name (no extension)", value=template_choice.replace(".docx", ""))
-            if st.button("Rename Template"):
-                new_path = os.path.join(TEMPLATE_FOLDER, new_template_name + ".docx")
-                if os.path.exists(new_path):
-                    st.warning("⚠️ A file with that name already exists.")
-                else:
-                    os.rename(template_path, new_path)
-                    st.success(f"✅ Renamed to {new_template_name}.docx")
-                    st.rerun()
-
-            st.subheader("🗑️ Delete Template")
-            confirm_delete = st.checkbox("Yes, delete this template permanently.")
-            if st.button("Delete Template") and confirm_delete:
-                os.remove(template_path)
-                st.success(f"✅ Deleted '{template_choice}'")
-                st.rerun()
-
-        else:
-            st.warning("⚠️ No templates found matching your search.")
-
-    # 🔧 Clean up old versions
-    st.subheader("🧼 Clean Up Old Template Versions")
-    if st.button("Run Cleanup"):
-        from collections import defaultdict
-
-        template_files = [f for f in os.listdir(TEMPLATE_FOLDER) if f.startswith("TEMPLATE_") and f.endswith(".docx")]
-        latest_versions = defaultdict(lambda: ("", 0))
-
-        for f in template_files:
-            parts = f.replace(".docx", "").rsplit("_v", 1)
-            if len(parts) == 2:
-                base, version = parts[0], int(parts[1])
-                if version > latest_versions[base][1]:
-                    latest_versions[base] = (f, version)
-
-        deleted = []
-        for f in template_files:
-            base = f.rsplit("_v", 1)[0]
-            if f != latest_versions[base][0]:
-                os.remove(os.path.join(TEMPLATE_FOLDER, f))
-                deleted.append(f)
-
-        if deleted:
-            st.success("✅ Deleted older versions:")
-            for d in deleted:
-                st.markdown(f"- {d}")
-        else:
-            st.info("📁 No old versions found to delete.")
-
-
-
-
-elif tool == "📖 Instructions & Support":
-    st.header("📘 Instructions")
-    st.markdown("""
-    Fill in the applicable fields:
-
-    ### 📂 Demands:
-    - Client Name
-    - Incident Date
-    - Summary
-    - Damages
-
-    ### 📨 FOIA:
-    - Client ID
-    - Case Synopsis
-    - Potential Requests
-    - Case Type
-    - Facility or System
-    - Defendant Role
-
-    Click **Generate** to create your letters and download the results.
-    """)
-
-    st.subheader("🐞 Report a Bug")
-    with st.form("report_form"):
-        issue = st.text_area("Describe the issue:")
-        submitted = st.form_submit_button("Submit")
-        if submitted:
-            with open("error_reports.txt", "a", encoding="utf-8") as f:
-                f.write(issue + "\n---\n")
-            st.success("✅ Issue submitted. Thank you!")
-
-else:
-    st.warning("🚧 This section is currently under development.")
-
-st.markdown("""
-<hr style="margin-top: 2rem;">
-<div style="text-align: center; font-size: 0.85rem; color: gray;">
-&copy; 2025 Stinar Gould Grieco & Hensley. All rights reserved.
-</div>
-""", unsafe_allow_html=True)
 
