@@ -164,11 +164,12 @@ elif tool == "📄 Batch Doc Generator":
 
     # Select saved template
     st.subheader("📂 Select a Saved Template")
-excluded_templates = {"FOIA_Template.docx", "Demand_Template.docx"}
+    excluded_templates = {"FOIA_Template.docx", "Demand_Template.docx"}
     available_templates = [
-    f for f in os.listdir("templates")
-    if f.endswith(".docx") and f not in excluded_templates
-]
+        f for f in os.listdir("templates")
+        if f.endswith(".docx") and f not in excluded_templates
+    ]
+
     if not available_templates:
         st.warning("⚠️ No saved templates found. Upload one above.")
         st.stop()
