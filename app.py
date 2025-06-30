@@ -4,7 +4,6 @@ st.set_page_config(page_title="Legal Automation Hub", layout="wide")
 import os
 import sys
 
-# Add the relative 'scripts' folder to the module search path
 SCRIPT_DIR = os.path.join(os.path.dirname(__file__), "scripts")
 sys.path.append(SCRIPT_DIR)
 
@@ -12,12 +11,12 @@ from generate_foia import run_foia
 from generate_demand import run_demand
 
 import pandas as pd
-import os
 import zipfile
 import io
 import tempfile
 from docx import Document
 from datetime import datetime
+
 
 st.markdown("""
 <style>
