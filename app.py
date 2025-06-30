@@ -184,8 +184,8 @@ elif tool == "📄 Batch Doc Generator":
     output_name_format = st.text_input("Enter filename format (e.g., HIPAA Notice ({{Client Name}}))")
     generate = st.button("Generate Documents")
 
-   if generate and excel_file and output_name_format:
-    df = pd.read_excel(excel_file)
+    if generate and excel_file and output_name_format:
+        df = pd.read_excel(excel_file)
 
     if df.empty:
         st.error("⚠️ Your Excel file has no rows. Please check the file and try again.")
