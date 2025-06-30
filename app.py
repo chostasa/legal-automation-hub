@@ -179,7 +179,7 @@ elif tool == "📄 Batch Doc Generator":
     template_choice = st.selectbox("Choose Template", available_templates)
     template_path = os.path.join(TEMPLATE_FOLDER, template_choice)
 
-    # Upload Excel
+    # Upload Excel and filename format
     excel_file = st.file_uploader("Upload Excel Data (.xlsx)", type="xlsx")
     output_name_format = st.text_input("Enter filename format (e.g., HIPAA Notice ({{Client Name}}))")
     generate = st.button("Generate Documents")
