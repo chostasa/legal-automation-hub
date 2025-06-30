@@ -1,3 +1,5 @@
+[FULL SCRIPT WITH FOIA + DEMANDS RESTORED — PASTE STARTS HERE]
+
 import streamlit as st
 st.set_page_config(page_title="Legal Automation Hub", layout="wide")
 
@@ -55,7 +57,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# === Sidebar Navigation - Only visible after login ===
+# === Sidebar Navigation ===
 with st.sidebar:
     st.markdown("### ⚖️ Legal Automation Hub")
     tool = st.radio("Choose Tool", [
@@ -66,6 +68,89 @@ with st.sidebar:
         "🚧 Complaint (In Progress)",
         "🚧 Subpoenas (In Progress)",
     ])
+
+# === FOIA Requests ===
+elif tool == "📬 FOIA Requests":
+    st.header("📨 Generate FOIA Letters")
+    with st.form("foia_form"):
+        client_id = st.text_input("Client ID")
+        defendant_name = st.text_input("Defendant Name")
+        abbreviation = st.text_input("Defendant Abbreviation (for file name)")
+        address_line1 = st.text_input("Defendant Address Line 1")
+        address_line2 = st.text_input("Defendant Address Line 2 (City, State, Zip)")
+        date_of_incident = st.date_input("Date of Incident")
+        location = st.text_input("Location of Incident")
+        case_synopsis = st.text_area("Case Synopsis")
+        potential_requests = st.text_area("Potential Requests")
+        explicit_instructions = st.text_area("Explicit Instructions (optional)")
+        case_type = st.text_input("Case Type")
+        facility = st.text_input("Facility or System")
+        defendant_role = st.text_input("Defendant Role")
+
+        submitted = st.form_submit_button("Generate FOIA Letter")
+
+    if submitted:
+        df = pd.DataFrame([{
+            "Client ID": client_id,
+            "Defendant Name": defendant_name,
+            "Defendant Abbreviation": abbreviation,
+            "Defendant Line 1 (address)": address_line1,
+            "Defendant Line 2 (City,state, zip)": address_line2,
+            "DOI": date_of_incident,
+            "location of incident": location,
+            "Case Synopsis": case_synopsis,
+            "Potential Requests": potential_requests,
+            "Explicit instructions": explicit_instructions,
+            "Case Type": case_type,
+            "Facility or System": facility,
+            "Defendant Role": defendant_role
+        }])
+
+        try:
+            output_paths = run_foia(df)
+            st.success("✅ FOIA letter generated!")
+            for path in output_paths:
+                filename = os.path.basename(path)
+                with open(path, "rb") as f:
+                    st.download_button(label=f"Download {filename}", data=f, file_name=filename)
+        except Exception as e:
+            st.error(f"❌ Error: {e}")
+
+# === Demands ===
+elif tool == "📂 Demands":
+    st.header("📁 Generate Demand Letters")
+    with st.form("demand_form"):
+        client_name = st.text_input("Client Name")
+        defendant = st.text_input("Defendant")
+        incident_date = st.date_input("Incident Date")
+        location = st.text_input("Location")
+        summary = st.text_area("Summary of Incident")
+        damages = st.text_area("Damages")
+
+        submitted = st.form_submit_button("Generate Demand Letter")
+
+    if submitted:
+        df = pd.DataFrame([{
+            "Client Name": client_name,
+            "Defendant": defendant,
+            "IncidentDate": incident_date.strftime("%B %d, %Y"),
+            "Location": location,
+            "Summary": summary,
+            "Damages": damages
+        }])
+
+        try:
+            output_paths = run_demand(df)
+            st.success("✅ Letter generated!")
+            for path in output_paths:
+                filename = os.path.basename(path)
+                with open(path, "rb") as f:
+                    st.download_button(label=f"Download {filename}", data=f, file_name=filename)
+        except Exception as e:
+            st.error(f"❌ Error: {e}")
+
+# The rest of your routing remains unchanged.
+
 
 # === Routing ===
 if tool == "📄 Batch Doc Generator":
