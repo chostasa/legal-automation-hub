@@ -3,7 +3,6 @@ import pandas as pd
 import os
 import zipfile
 import io
-import streamlit as st
 
 # === Simple login ===
 import streamlit as st
@@ -13,10 +12,9 @@ if "authenticated" not in st.session_state:
 
 if not st.session_state.authenticated:
     password = st.text_input("Enter Password", type="password")
-if password == st.secrets["password"]:
-    st.session_state.authenticated = True
-    st.experimental_rerun()
-
+    if password == st.secrets["password"]:
+        st.session_state.authenticated = True
+        st.rerun()
     else:
         st.stop()
 
@@ -55,7 +53,7 @@ else:
     st.warning("This section is currently under development.")
 
 # --- Demands Section ---
-if page == "Demands":
+if tool == "Demands":
     st.header("📑 Generate Demand Letters")
 
     st.subheader("📋 Fill in Demand Letter Info")
@@ -99,7 +97,7 @@ if page == "Demands":
             st.error(f"❌ Error: {e}")
 
 # --- FOIA Section ---
-elif page == "FOIA Requests":
+elif tool == "FOIA Requests":
     st.header("📨 Generate FOIA Letters")
 
     with st.form("foia_form"):
@@ -150,7 +148,7 @@ elif page == "FOIA Requests":
             st.error(f"❌ Error: {e}")
 
 # --- Instructions & Support Section ---
-elif page == "Instructions & Support":
+elif tool == "Instructions & Support":
     st.header("📘 Instructions")
     st.markdown("""
     Upload your Excel files with the following columns:
