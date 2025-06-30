@@ -151,12 +151,14 @@ elif tool == "📬 FOIA Requests":
 elif tool == "📄 Batch Doc Generator":
     st.header("📄 Batch Document Generator")
 
+    TEMPLATE_FOLDER = os.path.join("templates", "batch_docs")
+    os.makedirs(TEMPLATE_FOLDER, exist_ok=True)
+
     # Upload new template
     st.subheader("📁 Upload a New Template")
     uploaded_template = st.file_uploader("Upload a .docx Template", type="docx")
     if uploaded_template:
-        os.makedirs("templates", exist_ok=True)
-        save_path = os.path.join("templates", uploaded_template.name)
+        save_path = os.path.join(TEMPLATE_FOLDER, uploaded_template.name)
         with open(save_path, "wb") as f:
             f.write(uploaded_template.read())
         st.success(f"✅ Saved '{uploaded_template.name}' to your template library.")
@@ -164,9 +166,9 @@ elif tool == "📄 Batch Doc Generator":
 
     # Select saved template
     st.subheader("📂 Select a Saved Template")
-    excluded_templates = {"FOIA_Template.docx", "Demand_Template.docx"}
+    excluded_templates = {"foia_template.docx", "demand_template.docx"}
     available_templates = [
-        f for f in os.listdir("templates")
+        f for f in os.listdir(TEMPLATE_FOLDER)
         if f.endswith(".docx") and f not in excluded_templates
     ]
 
@@ -175,7 +177,7 @@ elif tool == "📄 Batch Doc Generator":
         st.stop()
 
     template_choice = st.selectbox("Choose Template", available_templates)
-    template_path = os.path.join("templates", template_choice)
+    template_path = os.path.join(TEMPLATE_FOLDER, template_choice)
 
     # Upload Excel
     excel_file = st.file_uploader("Upload Excel Data (.xlsx)", type="xlsx")
