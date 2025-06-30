@@ -1,15 +1,9 @@
 import streamlit as st
-st.set_page_config(page_title="Legal Automation Hub", layout="wide")
-
+import pandas as pd
 import os
-import sys
-
-SCRIPT_DIR = os.path.join(os.path.dirname(__file__), "scripts")
-sys.path.append(SCRIPT_DIR)
-
-from generate_foia import run_foia
-from generate_demand import run_demand
-
+import zipfile
+import io
+import streamlit as st
 import pandas as pd
 import zipfile
 import io
