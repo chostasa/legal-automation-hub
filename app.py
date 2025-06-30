@@ -1,12 +1,40 @@
 import streamlit as st
 st.set_page_config(page_title="Legal Automation Hub", layout="wide")
 
+# === Branding: Logo + Header ===
+st.markdown(
+    "<div style='text-align: center; padding-bottom: 1rem;'>"
+    "<img src='sggh_logo.png' width='200'>"
+    "<h2 style='color:#0A1D3B;'>Stinar Gould Grieco & Hensley</h2>"
+    "</div>",
+    unsafe_allow_html=True
+)
+
+
 import pandas as pd
 import os
 import zipfile
 import io
 import tempfile
 from docx import Document
+st.markdown("""
+<style>
+.stButton > button {
+    background-color: #B08B48;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+}
+.stTextInput > div > input {
+    border: 1px solid #0A1D3B;
+}
+.stTextArea > div > textarea {
+    border: 1px solid #0A1D3B;
+}
+</style>
+""", unsafe_allow_html=True)
+
 
 # === Simple login ===
 if "authenticated" not in st.session_state:
@@ -27,7 +55,7 @@ with st.sidebar:
         "📂 Demands",
         "📁 FOIA Requests",
         "📄 Batch Doc Generator",
-        "📖 Instructions & Support"
+        "📖 Instructions & Support",
         "🚧 Complaint (In Progress)",
         "🚧 Subpoenas (In Progress)",
     ])
@@ -212,3 +240,11 @@ elif tool == "📖 Instructions & Support":
 
 else:
     st.warning("🚧 This section is currently under development.")
+
+# === Footer ===
+st.markdown("""
+<hr style="margin-top:2rem;">
+<div style="text-align: center; font-size: 0.85rem; color: gray;">
+&copy; 2025 Stinar Gould Grieco & Hensley. All rights reserved.
+</div>
+""", unsafe_allow_html=True)
