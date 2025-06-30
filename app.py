@@ -153,7 +153,27 @@ elif tool == "📄 Batch Doc Generator":
 
     st.markdown("Upload a Word `.docx` template with placeholders (like `{{Name}}`) that exactly match your Excel column headers.")
 
-    template_file = st.file_uploader("Upload Word Template (.docx)", type="docx")
+    st.subheader("📁 Upload a New Template")
+uploaded_template = st.file_uploader("Upload a .docx Template", type="docx")
+
+if uploaded_template:
+    os.makedirs("templates", exist_ok=True)
+    save_path = os.path.join("templates", uploaded_template.name)
+    with open(save_path, "wb") as f:
+        f.write(uploaded_template.read())
+    st.success(f"✅ Saved '{uploaded_template.name}' to your template library.")
+    st.rerun()
+
+st.subheader("📂 Select a Saved Template")
+available_templates = [f for f in os.listdir("templates") if f.endswith(".docx")]
+
+if not available_templates:
+    st.warning("⚠️ No saved templates found. Upload one above.")
+    st.stop()
+
+template_choice = st.selectbox("Choose Template", available_templates)
+template_path = os.path.join("templates", template_choice)
+
     excel_file = st.file_uploader("Upload Excel Data (.xlsx)", type="xlsx")
 
     output_name_format = st.text_input("Enter filename format (e.g., HIPAA Notice to Saint Francis ({{Name}}))")
@@ -162,6 +182,8 @@ elif tool == "📄 Batch Doc Generator":
 
     if generate and template_file and excel_file and output_name_format:
         df = pd.read_excel(excel_file)
+st.subheader("🔍 Preview First Row of Excel Data")
+st.dataframe(df.head(1))
         left, right = "{{", "}}"
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -169,7 +191,7 @@ elif tool == "📄 Batch Doc Generator":
             os.makedirs(word_dir)
 
             for idx, row in df.iterrows():
-                doc = Document(template_file)
+                doc = Document(template_path)
 
                 for para in doc.paragraphs:
                     for key, val in row.items():
