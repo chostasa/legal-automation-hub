@@ -1,5 +1,3 @@
-[FULL SCRIPT WITH FOIA + DEMANDS RESTORED — PASTE STARTS HERE]
-
 import streamlit as st
 st.set_page_config(page_title="Legal Automation Hub", layout="wide")
 
