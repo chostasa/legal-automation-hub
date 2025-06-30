@@ -63,7 +63,6 @@ tool = st.radio("Choose Tool", [
     "📖 Instructions & Support",
     "📬 FOIA Requests",
     "📄 Batch Doc Generator",
-    "📖 Instructions & Support",
 "📂 Demands",
     "🚧 Complaint (In Progress)",
     "🚧 Subpoenas (In Progress)",
@@ -102,7 +101,7 @@ if tool == "📂 Demands":
         except Exception as e:
             st.error(f"❌ Error: {e}")
 
-elif tool == "📁 FOIA Requests":
+elif tool == "📬 FOIA Requests":
     st.header("📨 Generate FOIA Letters")
     with st.form("foia_form"):
         client_id = st.text_input("Client ID")
