@@ -10,24 +10,7 @@ import streamlit as st
 
 api_key = st.secrets.OPENAI_API_KEY
 client = OpenAI(api_key=api_key)
-
-def generate_with_openai(prompt):
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "..."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=1400,
-            temperature=0.4
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"OpenAI API Error: {e}")
-        return "[Error generating content]"
-    ...
-
+    
 # === Prompt Guidelines ===
 NO_HALLUCINATION_NOTE = """
 Do not fabricate or assume any facts. Use only what is provided. Avoid headings, greetings, and signoffs — the template handles those. Refer to the client by their first name only. Keep all naming, pronouns, and chronology consistent. Do not use more than one version of the incident. Do not repeat injury or treatment details across sections.

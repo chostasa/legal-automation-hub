@@ -20,14 +20,16 @@ if not st.session_state.authenticated:
 with st.sidebar:
     st.markdown("### 📂 Legal Automation Hub")
     tool = st.radio("Choose Tool", [
-        "🚧 Complaint (In Progress)",
-        "🚧 HIPAAs (In Progress)",
-        "🚧 FOIAs (In Progress)",
-        "🚧 Subpoenas (In Progress)",
-        "📂 Demands",
-        "📑 FOIA Requests",
-        "📖 Instructions & Support"
-    ])
+    "🚧 Complaint (In Progress)",
+    "🚧 HIPAAs (In Progress)",
+    "🚧 FOIAs (In Progress)",
+    "🚧 Subpoenas (In Progress)",
+    "📂 Demands",
+    "📑 FOIA Requests",
+    "📄 Batch Doc Generator",
+    "📖 Instructions & Support"
+])
+
 
 # === Routing ===
 if tool == "📂 Demands":
@@ -107,6 +109,70 @@ elif tool == "📑 FOIA Requests":
                     st.download_button(label=f"Download {filename}", data=f, file_name=filename)
         except Exception as e:
             st.error(f"❌ Error: {e}")
+
+elif tool == "📄 Batch Doc Generator":
+    st.header("📄 Batch Document Generator")
+
+    st.markdown("Upload a Word `.docx` template with placeholders (e.g., `{{Name}}`, `{{DOB}}`), and a matching Excel file.")
+
+    template_file = st.file_uploader("Upload Word Template (.docx)", type="docx")
+    excel_file = st.file_uploader("Upload Excel Data (.xlsx)", type="xlsx")
+
+    placeholder_format = st.text_input("Enter placeholder format (e.g., {{Name}})", value="{{}}")
+    output_name_format = st.text_input("Enter filename format (e.g., HIPAA Notice to Saint Francis ({{Name}}))")
+
+    generate = st.button("Generate Documents")
+
+    if generate and template_file and excel_file and placeholder_format and output_name_format:
+        import pandas as pd
+        from docx import Document
+        import zipfile, io
+
+        # Extract placeholder wrapper
+        left, right = placeholder_format[:2], placeholder_format[-2:]
+
+        # Read Excel data
+        df = pd.read_excel(excel_file)
+
+        # Prepare output buffer
+        docx_buffer = io.BytesIO()
+        zip_out = zipfile.ZipFile(docx_buffer, "w")
+
+        # Process each row
+        for idx, row in df.iterrows():
+            doc = Document(template_file)
+
+            for para in doc.paragraphs:
+                for key, val in row.items():
+                    placeholder = f"{left}{key}{right}"
+                    if placeholder in para.text:
+                        para.text = para.text.replace(placeholder, str(val))
+
+            for table in doc.tables:
+                for cell in table._cells:
+                    for key, val in row.items():
+                        placeholder = f"{left}{key}{right}"
+                        if placeholder in cell.text:
+                            cell.text = cell.text.replace(placeholder, str(val))
+
+            name_for_file = output_name_format
+            for key, val in row.items():
+                name_for_file = name_for_file.replace(f"{left}{key}{right}", str(val))
+            filename = name_for_file + ".docx"
+
+            temp_stream = io.BytesIO()
+            doc.save(temp_stream)
+            zip_out.writestr(filename, temp_stream.getvalue())
+
+        zip_out.close()
+        st.success("✅ Documents generated!")
+
+        st.download_button(
+            label="📦 Download All as ZIP",
+            data=docx_buffer.getvalue(),
+            file_name="merged_documents.zip",
+            mime="application/zip"
+        )
 
 elif tool == "📖 Instructions & Support":
     st.header("📘 Instructions")
