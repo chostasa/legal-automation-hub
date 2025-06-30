@@ -5,9 +5,8 @@ import pandas as pd
 import os
 import zipfile
 import io
-from docx import Document
 import tempfile
-from docx2pdf import convert
+import pypandoc
 
 # === Simple login ===
 if "authenticated" not in st.session_state:
@@ -168,7 +167,7 @@ elif tool == "📄 Batch Doc Generator":
                 doc.save(doc_path)
 
                 pdf_path = os.path.join(pdf_dir, filename.replace(".docx", ".pdf"))
-                convert(doc_path, pdf_path)
+                pypandoc.convert_file(doc_path, 'pdf', outputfile=pdf_path)
 
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w") as zip_out:
