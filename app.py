@@ -111,12 +111,11 @@ elif tool == "📑 FOIA Requests":
 elif tool == "📄 Batch Doc Generator":
     st.header("📄 Batch Document Generator")
 
-    st.markdown("Upload a Word `.docx` template with placeholders (e.g., `{{Name}}`, `{{DOB}}`), and a matching Excel file.")
+    st.markdown("Upload a Word `.docx` template with placeholders (like `{{Name}}`) that exactly match your Excel column headers.")
 
     template_file = st.file_uploader("Upload Word Template (.docx)", type="docx")
     excel_file = st.file_uploader("Upload Excel Data (.xlsx)", type="xlsx")
 
-    placeholder_format = st.text_input("Enter placeholder format (e.g., {{Name}})", value="{{}}")
     output_name_format = st.text_input("Enter filename format (e.g., HIPAA Notice to Saint Francis ({{Name}}))")
 
     generate = st.button("Generate Documents")
@@ -127,7 +126,7 @@ elif tool == "📄 Batch Doc Generator":
         import zipfile, io
 
         # Extract placeholder wrapper
-        left, right = placeholder_format[:2], placeholder_format[-2:]
+        left, right = "{{", "}}"
 
         # Read Excel data
         df = pd.read_excel(excel_file)
