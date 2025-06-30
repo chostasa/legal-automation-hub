@@ -98,20 +98,20 @@ if tool == "📄 Batch Doc Generator":
     doc_type = st.text_input("📄 Enter Document Type (e.g., HIPAA, Notice, Demand)")
 
     if uploaded_template and campaign_name and doc_type:
-        campaign_safe = campaign_name.replace(" ", "").replace("/", "-")
-        doc_type_safe = doc_type.replace(" ", "")
-        base_name = f"TEMPLATE_{doc_type_safe}_{campaign_safe}"
-        version = 1
-        while os.path.exists(os.path.join(TEMPLATE_FOLDER, f"{base_name}_v{version}.docx")):
-            version += 1
-        final_filename = f"{base_name}_v{version}.docx"
-        save_path = os.path.join(TEMPLATE_FOLDER, final_filename)
+        if st.button("Save Template"):
+            campaign_safe = campaign_name.replace(" ", "").replace("/", "-")
+            doc_type_safe = doc_type.replace(" ", "")
+            base_name = f"TEMPLATE_{doc_type_safe}_{campaign_safe}"
+            version = 1
+            while os.path.exists(os.path.join(TEMPLATE_FOLDER, f"{base_name}_v{version}.docx")):
+                version += 1
+            final_filename = f"{base_name}_v{version}.docx"
+            save_path = os.path.join(TEMPLATE_FOLDER, final_filename)
 
-        with open(save_path, "wb") as f:
-            f.write(uploaded_template.read())
+            with open(save_path, "wb") as f:
+                f.write(uploaded_template.read())
 
-        st.success(f"✅ Saved as {final_filename}")
-        st.rerun()
+            st.success(f"✅ Saved as {final_filename}")
 
     st.subheader("📂 Select a Saved Template")
     excluded_templates = {"foia_template.docx", "demand_template.docx"}
@@ -150,15 +150,14 @@ if tool == "📄 Batch Doc Generator":
 
     def clear_all_fields():
         for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.experimental_rerun()
+            if key != "authenticated":
+                del st.session_state[key]
+        st.session_state.clear = True
 
-    st.button("🔄 Clear All Fields", on_click=clear_all_fields)
+    if st.button("🔄 Clear All Fields"):
+        clear_all_fields()
+        st.stop()
 
-# (rest of your routing code remains untouched here)
-
-
-    # Upload Excel and filename format
     excel_file = st.file_uploader("Upload Excel Data (.xlsx)", type="xlsx")
     output_name_format = st.text_input("Enter filename format (e.g., HIPAA Notice ({{Client Name}}))")
     generate = st.button("Generate Documents")
@@ -170,22 +169,18 @@ if tool == "📄 Batch Doc Generator":
             st.error("⚠️ Your Excel file has no rows. Please check the file and try again.")
             st.stop()
 
-        # Show preview
         st.subheader("🔍 Preview First Row of Excel Data")
         st.dataframe(df.head(1))
 
-        # Show columns for debugging
         st.markdown("**Columns in Excel:**")
         st.code(", ".join(df.columns))
 
-        # Preview filename
         preview_filename = output_name_format
         for key, val in df.iloc[0].items():
             preview_filename = preview_filename.replace(f"{{{{{key}}}}}", str(val))
         st.markdown("**📄 Preview Filename for First Row:**")
         st.code(preview_filename)
 
-        # Generate documents
         left, right = "{{", "}}"
         with tempfile.TemporaryDirectory() as temp_dir:
             word_dir = os.path.join(temp_dir, "Word Documents")
@@ -224,7 +219,6 @@ if tool == "📄 Batch Doc Generator":
                 doc_path = os.path.join(word_dir, filename)
                 doc.save(doc_path)
 
-            # Zip files
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w") as zip_out:
                 for file in os.listdir(word_dir):
@@ -239,6 +233,7 @@ if tool == "📄 Batch Doc Generator":
                 file_name="word_documents.zip",
                 mime="application/zip"
             )
+
 
 elif tool == "📖 Instructions & Support":
     st.header("📘 Instructions")
