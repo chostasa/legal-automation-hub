@@ -187,9 +187,9 @@ if tool == "📄 Batch Doc Generator":
         if "uploaded_template_path" in st.session_state:
             st.markdown("---")
             st.subheader("📄 Generate Documents with Uploaded Template")
-            excel_file = st.file_uploader("Upload Excel Data (.xlsx)", type="xlsx", key="upload_excel")
-            output_name_format = st.text_input("Enter filename format (e.g., HIPAA Notice ({{Client Name}}))", key="upload_format")
-            generate = st.button("Generate Documents", key="upload_generate")
+            excel_file = st.file_uploader("Upload Excel Data (.xlsx)", type="xlsx", key="upload_excel_file")
+            output_name_format = st.text_input("Enter filename format (e.g., HIPAA Notice ({{Client Name}}))", key="upload_name_format")
+            generate = st.button("Generate Documents", key="upload_generate_button")
 
             if generate and excel_file and output_name_format:
                 df = pd.read_excel(excel_file)
