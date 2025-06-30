@@ -187,79 +187,79 @@ elif tool == "📄 Batch Doc Generator":
     if generate and excel_file and output_name_format:
         df = pd.read_excel(excel_file)
 
-    if df.empty:
-        st.error("⚠️ Your Excel file has no rows. Please check the file and try again.")
-        st.stop()
+        if df.empty:
+            st.error("⚠️ Your Excel file has no rows. Please check the file and try again.")
+            st.stop()
 
-    # Show preview
-    st.subheader("🔍 Preview First Row of Excel Data")
-    st.dataframe(df.head(1))
+        # Show preview
+        st.subheader("🔍 Preview First Row of Excel Data")
+        st.dataframe(df.head(1))
 
-    # Show columns for debugging
-    st.markdown("**Columns in Excel:**")
-    st.code(", ".join(df.columns))
+        # Show columns for debugging
+        st.markdown("**Columns in Excel:**")
+        st.code(", ".join(df.columns))
 
-    # Preview filename
-    preview_filename = output_name_format
-    for key, val in df.iloc[0].items():
-        preview_filename = preview_filename.replace(f"{{{{{key}}}}}", str(val))
-    st.markdown("**📄 Preview Filename for First Row:**")
-    st.code(preview_filename)
+        # Preview filename
+        preview_filename = output_name_format
+        for key, val in df.iloc[0].items():
+            preview_filename = preview_filename.replace(f"{{{{{key}}}}}", str(val))
+        st.markdown("**📄 Preview Filename for First Row:**")
+        st.code(preview_filename)
 
-    # Generate documents
-    left, right = "{{", "}}"
-    with tempfile.TemporaryDirectory() as temp_dir:
-        word_dir = os.path.join(temp_dir, "Word Documents")
-        os.makedirs(word_dir)
+        # Generate documents
+        left, right = "{{", "}}"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            word_dir = os.path.join(temp_dir, "Word Documents")
+            os.makedirs(word_dir)
 
-        for idx, row in df.iterrows():
-            doc = Document(template_path)
+            for idx, row in df.iterrows():
+                doc = Document(template_path)
 
-            for para in doc.paragraphs:
+                for para in doc.paragraphs:
+                    for key, val in row.items():
+                        if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
+                            val = val.strftime("%-m/%-d/%Y")
+                        placeholder = f"{left}{key}{right}"
+                        for run in para.runs:
+                            if placeholder in run.text:
+                                run.text = run.text.replace(placeholder, str(val))
+
+                for table in doc.tables:
+                    for cell in table._cells:
+                        for para in cell.paragraphs:
+                            for run in para.runs:
+                                for key, val in row.items():
+                                    if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
+                                        val = val.strftime("%-m/%-d/%Y")
+                                    placeholder = f"{left}{key}{right}"
+                                    if placeholder in run.text:
+                                        run.text = run.text.replace(placeholder, str(val))
+
+                name_for_file = output_name_format
                 for key, val in row.items():
                     if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
                         val = val.strftime("%-m/%-d/%Y")
-                    placeholder = f"{left}{key}{right}"
-                    for run in para.runs:
-                        if placeholder in run.text:
-                            run.text = run.text.replace(placeholder, str(val))
+                    name_for_file = name_for_file.replace(f"{left}{key}{right}", str(val))
+                filename = name_for_file + ".docx"
 
-            for table in doc.tables:
-                for cell in table._cells:
-                    for para in cell.paragraphs:
-                        for run in para.runs:
-                            for key, val in row.items():
-                                if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
-                                    val = val.strftime("%-m/%-d/%Y")
-                                placeholder = f"{left}{key}{right}"
-                                if placeholder in run.text:
-                                    run.text = run.text.replace(placeholder, str(val))
+                doc_path = os.path.join(word_dir, filename)
+                doc.save(doc_path)
 
-            name_for_file = output_name_format
-            for key, val in row.items():
-                if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
-                    val = val.strftime("%-m/%-d/%Y")
-                name_for_file = name_for_file.replace(f"{left}{key}{right}", str(val))
-            filename = name_for_file + ".docx"
+            # Zip files
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w") as zip_out:
+                for file in os.listdir(word_dir):
+                    full_path = os.path.join(word_dir, file)
+                    arcname = os.path.join("Word Documents", file)
+                    zip_out.write(full_path, arcname=arcname)
 
-            doc_path = os.path.join(word_dir, filename)
-            doc.save(doc_path)
-
-        # Zip files
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, "w") as zip_out:
-            for file in os.listdir(word_dir):
-                full_path = os.path.join(word_dir, file)
-                arcname = os.path.join("Word Documents", file)
-                zip_out.write(full_path, arcname=arcname)
-
-        st.success("✅ Word documents generated!")
-        st.download_button(
-            label="📦 Download All (Word Only – PDF not supported on Streamlit Cloud)",
-            data=zip_buffer.getvalue(),
-            file_name="word_documents.zip",
-            mime="application/zip"
-        )
+            st.success("✅ Word documents generated!")
+            st.download_button(
+                label="📦 Download All (Word Only – PDF not supported on Streamlit Cloud)",
+                data=zip_buffer.getvalue(),
+                file_name="word_documents.zip",
+                mime="application/zip"
+            )
 
 elif tool == "📖 Instructions & Support":
     st.header("📘 Instructions")
