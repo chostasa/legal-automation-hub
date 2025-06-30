@@ -7,6 +7,8 @@ import zipfile
 import io
 import tempfile
 from docx import Document
+from datetime import datetime
+
 st.markdown("""
 <style>
 .stButton > button {
@@ -25,7 +27,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
 # === Simple login ===
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -41,7 +42,6 @@ if not st.session_state.authenticated:
 # === Branding: Logo inside navy header bar ===
 import base64
 
-# Load the logo as base64 to embed directly (Cloud-safe)
 def load_logo_base64(file_path):
     with open(file_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode()
@@ -55,11 +55,10 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-
 # === Sidebar Navigation - Only visible after login ===
 with st.sidebar:
     st.markdown("### ⚖️ Legal Automation Hub")
-    tool = st.radio("Choose Tool", [  # ✅ inside the sidebar
+    tool = st.radio("Choose Tool", [
         "📖 Instructions & Support",
         "📄 Batch Doc Generator",
         "📬 FOIA Requests",
@@ -68,103 +67,52 @@ with st.sidebar:
         "🚧 Subpoenas (In Progress)",
     ])
 
-
 # === Routing ===
-if tool == "📂 Demands":
-    st.header("📁 Generate Demand Letters")
-    with st.form("demand_form"):
-        client_name = st.text_input("Client Name")
-        defendant = st.text_input("Defendant")
-        incident_date = st.date_input("Incident Date")
-        location = st.text_input("Location")
-        summary = st.text_area("Summary of Incident")
-        damages = st.text_area("Damages")
-
-        submitted = st.form_submit_button("Generate Demand Letter")
-
-    if submitted:
-        df = pd.DataFrame([{
-            "Client Name": client_name,
-            "Defendant": defendant,
-            "IncidentDate": incident_date.strftime("%B %d, %Y"),
-            "Location": location,
-            "Summary": summary,
-            "Damages": damages
-        }])
-
-        try:
-            output_paths = run_demand(df)  # <-- make sure this function is defined/imported
-            st.success("✅ Letter generated!")
-            for path in output_paths:
-                filename = os.path.basename(path)
-                with open(path, "rb") as f:
-                    st.download_button(label=f"Download {filename}", data=f, file_name=filename)
-        except Exception as e:
-            st.error(f"❌ Error: {e}")
-
-elif tool == "📬 FOIA Requests":
-    st.header("📨 Generate FOIA Letters")
-    with st.form("foia_form"):
-        client_id = st.text_input("Client ID")
-        defendant_name = st.text_input("Defendant Name")
-        abbreviation = st.text_input("Defendant Abbreviation (for file name)")
-        address_line1 = st.text_input("Defendant Address Line 1")
-        address_line2 = st.text_input("Defendant Address Line 2 (City, State, Zip)")
-        date_of_incident = st.date_input("Date of Incident")
-        location = st.text_input("Location of Incident")
-        case_synopsis = st.text_area("Case Synopsis")
-        potential_requests = st.text_area("Potential Requests")
-        explicit_instructions = st.text_area("Explicit Instructions (optional)")
-        case_type = st.text_input("Case Type")
-        facility = st.text_input("Facility or System")
-        defendant_role = st.text_input("Defendant Role")
-
-        submitted = st.form_submit_button("Generate FOIA Letter")
-
-    if submitted:
-        df = pd.DataFrame([{
-            "Client ID": client_id,
-            "Defendant Name": defendant_name,
-            "Defendant Abbreviation": abbreviation,
-            "Defendant Line 1 (address)": address_line1,
-            "Defendant Line 2 (City,state, zip)": address_line2,
-            "DOI": date_of_incident,
-            "location of incident": location,
-            "Case Synopsis": case_synopsis,
-            "Potential Requests": potential_requests,
-            "Explicit instructions": explicit_instructions,
-            "Case Type": case_type,
-            "Facility or System": facility,
-            "Defendant Role": defendant_role
-        }])
-
-        try:
-            output_paths = run_foia(df)  # <-- make sure this function is defined/imported
-            st.success("✅ FOIA letter generated!")
-            for path in output_paths:
-                filename = os.path.basename(path)
-                with open(path, "rb") as f:
-                    st.download_button(label=f"Download {filename}", data=f, file_name=filename)
-        except Exception as e:
-            st.error(f"❌ Error: {e}")
-
-elif tool == "📄 Batch Doc Generator":
+if tool == "📄 Batch Doc Generator":
     st.header("📄 Batch Document Generator")
 
     TEMPLATE_FOLDER = os.path.join("templates", "batch_docs")
     os.makedirs(TEMPLATE_FOLDER, exist_ok=True)
 
-    # Upload new template
+    try:
+        campaign_df = pd.read_csv("campaigns.csv")
+        CAMPAIGN_OPTIONS = sorted(campaign_df["Campaign"].dropna().unique())
+    except Exception as e:
+        CAMPAIGN_OPTIONS = []
+        st.error(f"❌ Failed to load campaigns.csv: {e}")
+
+    st.markdown("""
+    > **How it works:**  
+    > 1. Upload a template with `{placeholders}`  
+    > 2. Upload Excel with matching column headers  
+    > 3. Enter filename format, generate, and download
+
+    ✅ Validates fields  
+    📁 Version-safe template naming  
+    🔐 No coding required
+    """)
+
     st.subheader("📁 Upload a New Template")
     uploaded_template = st.file_uploader("Upload a .docx Template", type="docx")
-    if uploaded_template:
-        save_path = os.path.join(TEMPLATE_FOLDER, uploaded_template.name)
+    campaign_name = st.selectbox("🏷️ Select Campaign for This Template", CAMPAIGN_OPTIONS)
+    doc_type = st.text_input("📄 Enter Document Type (e.g., HIPAA, Notice, Demand)")
+
+    if uploaded_template and campaign_name and doc_type:
+        campaign_safe = campaign_name.replace(" ", "").replace("/", "-")
+        doc_type_safe = doc_type.replace(" ", "")
+        base_name = f"TEMPLATE_{doc_type_safe}_{campaign_safe}"
+        version = 1
+        while os.path.exists(os.path.join(TEMPLATE_FOLDER, f"{base_name}_v{version}.docx")):
+            version += 1
+        final_filename = f"{base_name}_v{version}.docx"
+        save_path = os.path.join(TEMPLATE_FOLDER, final_filename)
+
         with open(save_path, "wb") as f:
             f.write(uploaded_template.read())
-        st.success(f"✅ Saved '{uploaded_template.name}' to your template library.")
+
+        st.success(f"✅ Saved as {final_filename}")
         st.rerun()
 
-    # Select saved template
     st.subheader("📂 Select a Saved Template")
     excluded_templates = {"foia_template.docx", "demand_template.docx"}
     available_templates = [
@@ -172,12 +120,43 @@ elif tool == "📄 Batch Doc Generator":
         if f.endswith(".docx") and f not in excluded_templates
     ]
 
-    if not available_templates:
-        st.warning("⚠️ No saved templates found. Upload one above.")
+    search_query = st.text_input("🔍 Search templates by keyword or campaign").lower()
+    filtered_templates = [f for f in available_templates if search_query in f.lower()]
+
+    if not filtered_templates:
+        st.warning("⚠️ No matching templates found.")
         st.stop()
 
-    template_choice = st.selectbox("Choose Template", available_templates)
+    template_choice = st.selectbox("Choose Template", filtered_templates)
     template_path = os.path.join(TEMPLATE_FOLDER, template_choice)
+
+    st.subheader("✏️ Rename Template")
+    new_template_name = st.text_input("New name (no extension)", value=template_choice.replace(".docx", ""))
+    if st.button("Rename Template"):
+        new_path = os.path.join(TEMPLATE_FOLDER, new_template_name + ".docx")
+        if os.path.exists(new_path):
+            st.warning("⚠️ A file with that name already exists.")
+        else:
+            os.rename(template_path, new_path)
+            st.success(f"✅ Renamed to {new_template_name}.docx")
+            st.rerun()
+
+    st.subheader("🗑️ Delete Template")
+    confirm_delete = st.checkbox("Yes, delete this template permanently.")
+    if st.button("Delete Template") and confirm_delete:
+        os.remove(template_path)
+        st.success(f"✅ Deleted '{template_choice}'")
+        st.rerun()
+
+    def clear_all_fields():
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.experimental_rerun()
+
+    st.button("🔄 Clear All Fields", on_click=clear_all_fields)
+
+# (rest of your routing code remains untouched here)
+
 
     # Upload Excel and filename format
     excel_file = st.file_uploader("Upload Excel Data (.xlsx)", type="xlsx")
