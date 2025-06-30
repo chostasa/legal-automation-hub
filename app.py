@@ -1,73 +1,3 @@
-import streamlit as st
-st.set_page_config(page_title="Legal Automation Hub", layout="wide")
-
-import pandas as pd
-import os
-import zipfile
-import io
-import tempfile
-from docx import Document
-from datetime import datetime
-
-st.markdown("""
-<style>
-.stButton > button {
-    background-color: #B08B48;
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    font-weight: 600;
-}
-.stTextInput > div > input {
-    border: 1px solid #0A1D3B;
-}
-.stTextArea > div > textarea {
-    border: 1px solid #0A1D3B;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# === Simple login ===
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-
-if not st.session_state.authenticated:
-    password = st.text_input("Enter Password", type="password")
-    if password == st.secrets["password"]:
-        st.session_state.authenticated = True
-        st.rerun()
-    else:
-        st.stop()
-
-# === Branding: Logo inside navy header bar ===
-import base64
-
-def load_logo_base64(file_path):
-    with open(file_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode()
-
-logo_base64 = load_logo_base64("sggh_logo.png")
-
-st.markdown(f"""
-<div style="background-color: #0A1D3B; padding: 2rem 0; text-align: center;">
-    <img src="data:image/png;base64,{logo_base64}" width="360" style="margin-bottom: 1rem;" />
-    <h1 style="color: white; font-size: 2.2rem; margin: 0;">Stinar Gould Grieco & Hensley</h1>
-</div>
-""", unsafe_allow_html=True)
-
-# === Sidebar Navigation - Only visible after login ===
-with st.sidebar:
-    st.markdown("### ⚖️ Legal Automation Hub")
-    tool = st.radio("Choose Tool", [
-        "📖 Instructions & Support",
-        "📄 Batch Doc Generator",
-        "📬 FOIA Requests",
-        "📂 Demands",
-        "🚧 Complaint (In Progress)",
-        "🚧 Subpoenas (In Progress)",
-    ])
-
-# === Routing ===
 import streamlit as st 
 st.set_page_config(page_title="Legal Automation Hub", layout="wide")
 
@@ -187,9 +117,9 @@ if tool == "📄 Batch Doc Generator":
         if "uploaded_template_path" in st.session_state:
             st.markdown("---")
             st.subheader("📄 Generate Documents with Uploaded Template")
-            excel_file = st.file_uploader("Upload Excel Data (.xlsx)", type="xlsx", key="upload_excel_file")
-            output_name_format = st.text_input("Enter filename format (e.g., HIPAA Notice ({{Client Name}}))", key="upload_name_format")
-            generate = st.button("Generate Documents", key="upload_generate_button")
+            excel_file = st.file_uploader("Upload Excel Data (.xlsx)", type="xlsx", key="upload_excel")
+            output_name_format = st.text_input("Enter filename format (e.g., HIPAA Notice ({{Client Name}}))", key="upload_format")
+            generate = st.button("Generate Documents", key="upload_generate")
 
             if generate and excel_file and output_name_format:
                 df = pd.read_excel(excel_file)
@@ -279,9 +209,6 @@ if tool == "📄 Batch Doc Generator":
                         file_name="word_documents.zip",
                         mime="application/zip"
                     )
-
-
-
 
 elif tool == "📖 Instructions & Support":
     st.header("📘 Instructions")
