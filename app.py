@@ -38,14 +38,18 @@ if not st.session_state.authenticated:
     else:
         st.stop()
 
-# === Branding: Large Centered Logo ===
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    st.image("sggh_logo.png", width=300)
-    st.markdown(
-        "<h1 style='text-align: center; color: #0A1D3B; margin-top: 0.5rem;'>Stinar Gould Grieco & Hensley</h1>",
-        unsafe_allow_html=True
-    )
+# === Branding: Larger Logo + Navy Background Bar ===
+st.markdown("""
+<div style="
+    background-color: #0A1D3B;
+    padding: 2rem 0;
+    text-align: center;
+">
+    <img src="sggh_logo.png" width="360" style="margin-bottom: 1rem;" />
+    <h1 style='color: white; font-size: 2.2rem; margin: 0;'>Stinar Gould Grieco & Hensley</h1>
+</div>
+""", unsafe_allow_html=True)
+
 
 # === Sidebar Navigation - Only visible after login ===
 with st.sidebar:
