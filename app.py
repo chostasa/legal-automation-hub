@@ -1,16 +1,6 @@
 import streamlit as st
 st.set_page_config(page_title="Legal Automation Hub", layout="wide")
 
-# === Branding: Logo + Header ===
-st.markdown(
-    "<div style='text-align: center; padding-bottom: 1rem;'>"
-    "<img src='sggh_logo.png' width='200'>"
-    "<h2 style='color:#0A1D3B;'>Stinar Gould Grieco & Hensley</h2>"
-    "</div>",
-    unsafe_allow_html=True
-)
-
-
 import pandas as pd
 import os
 import zipfile
@@ -48,17 +38,26 @@ if not st.session_state.authenticated:
     else:
         st.stop()
 
+# === Branding: Logo + Header (streamlit-safe) ===
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    st.image("sggh_logo.png", width=200)
+    st.markdown(
+        "<h2 style='text-align: center; color: #0A1D3B;'>Stinar Gould Grieco & Hensley</h2>",
+        unsafe_allow_html=True
+    )
+
 # === Sidebar Navigation - Only visible after login ===
 with st.sidebar:
     st.markdown("### 📂 Legal Automation Hub")
-    tool = st.radio("Choose Tool", [
-        "📂 Demands",
-        "📁 FOIA Requests",
-        "📄 Batch Doc Generator",
-        "📖 Instructions & Support",
-        "🚧 Complaint (In Progress)",
-        "🚧 Subpoenas (In Progress)",
-    ])
+tool = st.radio("Choose Tool", [
+    "📂 Demands",
+    "📁 FOIA Requests",
+    "📄 Batch Doc Generator",
+    "📖 Instructions & Support",
+    "🚧 Complaint (In Progress)",
+    "🚧 Subpoenas (In Progress)",
+])
 
 # === Routing ===
 if tool == "📂 Demands":
@@ -241,10 +240,10 @@ elif tool == "📖 Instructions & Support":
 else:
     st.warning("🚧 This section is currently under development.")
 
-# === Footer ===
 st.markdown("""
-<hr style="margin-top:2rem;">
+<hr style="margin-top: 2rem;">
 <div style="text-align: center; font-size: 0.85rem; color: gray;">
 &copy; 2025 Stinar Gould Grieco & Hensley. All rights reserved.
 </div>
 """, unsafe_allow_html=True)
+
