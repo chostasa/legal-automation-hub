@@ -7,6 +7,7 @@ import zipfile
 import io
 import tempfile
 import pypandoc
+from docx import Document
 
 # === Simple login ===
 if "authenticated" not in st.session_state:
