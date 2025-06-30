@@ -38,15 +38,20 @@ if not st.session_state.authenticated:
     else:
         st.stop()
 
-# === Branding: Larger Logo + Navy Background Bar ===
-st.markdown("""
-<div style="
-    background-color: #0A1D3B;
-    padding: 2rem 0;
-    text-align: center;
-">
-    <img src="sggh_logo.png" width="360" style="margin-bottom: 1rem;" />
-    <h1 style='color: white; font-size: 2.2rem; margin: 0;'>Stinar Gould Grieco & Hensley</h1>
+# === Branding: Logo inside navy header bar ===
+import base64
+
+# Load the logo as base64 to embed directly (Cloud-safe)
+def load_logo_base64(file_path):
+    with open(file_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode()
+
+logo_base64 = load_logo_base64("sggh_logo.png")
+
+st.markdown(f"""
+<div style="background-color: #0A1D3B; padding: 2rem 0; text-align: center;">
+    <img src="data:image/png;base64,{logo_base64}" width="360" style="margin-bottom: 1rem;" />
+    <h1 style="color: white; font-size: 2.2rem; margin: 0;">Stinar Gould Grieco & Hensley</h1>
 </div>
 """, unsafe_allow_html=True)
 
@@ -55,10 +60,11 @@ st.markdown("""
 with st.sidebar:
     st.markdown("### 📂 Legal Automation Hub")
 tool = st.radio("Choose Tool", [
-    "📂 Demands",
+    "📖 Instructions & Support",
     "📁 FOIA Requests",
     "📄 Batch Doc Generator",
     "📖 Instructions & Support",
+"📂 Demands",
     "🚧 Complaint (In Progress)",
     "🚧 Subpoenas (In Progress)",
 ])
