@@ -68,7 +68,7 @@ with st.sidebar:
     ])
 
 # === FOIA Requests ===
-elif tool == "📬 FOIA Requests":
+if tool == "📬 FOIA Requests":
     st.header("📨 Generate FOIA Letters")
     with st.form("foia_form"):
         client_id = st.text_input("Client ID")
