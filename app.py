@@ -3,6 +3,10 @@ st.set_page_config(page_title="Legal Automation Hub", layout="wide")
 
 import pandas as pd
 import os
+import zipfile
+import io
+from docx import Document
+
 
 # === Simple login ===
 if "authenticated" not in st.session_state:
@@ -120,7 +124,7 @@ elif tool == "📄 Batch Doc Generator":
 
     generate = st.button("Generate Documents")
 
-    if generate and template_file and excel_file and placeholder_format and output_name_format:
+    if generate and template_file and excel_file and output_name_format:
         import pandas as pd
         from docx import Document
         import zipfile, io
