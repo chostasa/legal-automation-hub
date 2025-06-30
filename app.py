@@ -234,6 +234,36 @@ if tool == "📄 Batch Doc Generator":
                 mime="application/zip"
             )
 
+    # 🔧 Clean up old versions
+    st.subheader("🧼 Clean Up Old Template Versions")
+    if st.button("Run Cleanup"):
+        from collections import defaultdict
+
+        template_files = [f for f in os.listdir(TEMPLATE_FOLDER) if f.startswith("TEMPLATE_") and f.endswith(".docx")]
+        latest_versions = defaultdict(lambda: ("", 0))
+
+        for f in template_files:
+            parts = f.replace(".docx", "").rsplit("_v", 1)
+            if len(parts) == 2:
+                base, version = parts[0], int(parts[1])
+                if version > latest_versions[base][1]:
+                    latest_versions[base] = (f, version)
+
+        deleted = []
+        for f in template_files:
+            base = f.rsplit("_v", 1)[0]
+            if f != latest_versions[base][0]:
+                os.remove(os.path.join(TEMPLATE_FOLDER, f))
+                deleted.append(f)
+
+        if deleted:
+            st.success("✅ Deleted older versions:")
+            for d in deleted:
+                st.markdown(f"- {d}")
+        else:
+            st.info("📁 No old versions found to delete.")
+
+
 
 elif tool == "📖 Instructions & Support":
     st.header("📘 Instructions")
