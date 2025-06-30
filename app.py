@@ -1,4 +1,4 @@
-import streamlit as st 
+import streamlit as st
 st.set_page_config(page_title="Legal Automation Hub", layout="wide")
 
 import pandas as pd
@@ -55,7 +55,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# === Sidebar Navigation ===
+# === Sidebar Navigation - Only visible after login ===
 with st.sidebar:
     st.markdown("### ⚖️ Legal Automation Hub")
     tool = st.radio("Choose Tool", [
@@ -92,123 +92,161 @@ if tool == "📄 Batch Doc Generator":
     🔐 No coding required
     """)
 
-    st.subheader("📁 Upload a New Template")
-    uploaded_template = st.file_uploader("Upload a .docx Template", type="docx")
-    campaign_name = st.selectbox("🏷️ Select Campaign for This Template", CAMPAIGN_OPTIONS)
-    doc_type = st.text_input("📄 Enter Document Type (e.g., HIPAA, Notice, Demand)")
+    st.subheader("🧾 Template Manager")
+    template_mode = st.radio("Choose an action:", ["Upload New Template", "Select a Saved Template", "Template Options"])
 
-    if uploaded_template and campaign_name and doc_type:
-        if st.button("Save Template"):
-            campaign_safe = campaign_name.replace(" ", "").replace("/", "-")
-            doc_type_safe = doc_type.replace(" ", "")
-            base_name = f"TEMPLATE_{doc_type_safe}_{campaign_safe}"
-            version = 1
-            while os.path.exists(os.path.join(TEMPLATE_FOLDER, f"{base_name}_v{version}.docx")):
-                version += 1
-            final_filename = f"{base_name}_v{version}.docx"
-            save_path = os.path.join(TEMPLATE_FOLDER, final_filename)
+    def process_and_preview(template_path, df, output_name_format):
+        st.subheader("🔍 Preview First Row of Excel Data")
+        st.dataframe(df.head(1))
 
-            with open(save_path, "wb") as f:
-                f.write(uploaded_template.read())
+        st.markdown("**Columns in Excel:**")
+        st.code(", ".join(df.columns))
 
-            st.success(f"✅ Saved as {final_filename}")
-            st.session_state.uploaded_template_path = save_path
+        preview_filename = output_name_format
+        for key, val in df.iloc[0].items():
+            preview_filename = preview_filename.replace(f"{{{{{key}}}}}", str(val))
+        st.markdown("**📄 Preview Filename for First Row:**")
+        st.code(preview_filename)
 
-        if "uploaded_template_path" in st.session_state:
-            st.markdown("---")
-            st.subheader("📄 Generate Documents with Uploaded Template")
-            excel_file = st.file_uploader("Upload Excel Data (.xlsx)", type="xlsx", key="upload_excel")
-            output_name_format = st.text_input("Enter filename format (e.g., HIPAA Notice ({{Client Name}}))", key="upload_format")
-            generate = st.button("Generate Documents", key="upload_generate")
+        left, right = "{{", "}}"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            word_dir = os.path.join(temp_dir, "Word Documents")
+            os.makedirs(word_dir)
 
-            if generate and excel_file and output_name_format:
-                df = pd.read_excel(excel_file)
-                if df.empty:
-                    st.error("⚠️ Your Excel file has no rows. Please check the file and try again.")
-                    st.stop()
+            for idx, row in df.iterrows():
+                doc = Document(template_path)
 
-                st.subheader("🔍 Preview First Row of Excel Data")
-                st.dataframe(df.head(1))
-                st.code(", ".join(df.columns))
+                for para in doc.paragraphs:
+                    for key, val in row.items():
+                        if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
+                            val = val.strftime("%-m/%-d/%Y")
+                        placeholder = f"{left}{key}{right}"
+                        for run in para.runs:
+                            if placeholder in run.text:
+                                run.text = run.text.replace(placeholder, str(val))
 
-                preview_filename = output_name_format
-                for key, val in df.iloc[0].items():
-                    preview_filename = preview_filename.replace(f"{{{{{key}}}}}", str(val))
-                st.markdown("**📄 Preview Filename for First Row:**")
-                st.code(preview_filename)
-
-                if st.checkbox("👁️ Preview generated document for first row", key="preview_toggle"):
-                    doc_preview = Document(st.session_state.uploaded_template_path)
-                    row = df.iloc[0]
-                    for para in doc_preview.paragraphs:
-                        for key, val in row.items():
-                            if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
-                                val = val.strftime("%-m/%-d/%Y")
-                            placeholder = f"{{{{{key}}}}}"
+                for table in doc.tables:
+                    for cell in table._cells:
+                        for para in cell.paragraphs:
                             for run in para.runs:
-                                if placeholder in run.text:
-                                    run.text = run.text.replace(placeholder, str(val))
-                    for table in doc_preview.tables:
-                        for cell in table._cells:
-                            for para in cell.paragraphs:
-                                for run in para.runs:
-                                    for key, val in row.items():
-                                        if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
-                                            val = val.strftime("%-m/%-d/%Y")
-                                        placeholder = f"{{{{{key}}}}}"
-                                        if placeholder in run.text:
-                                            run.text = run.text.replace(placeholder, str(val))
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp_doc:
-                        doc_preview.save(tmp_doc.name)
-                        tmp_doc.seek(0)
-                        st.download_button("📥 Download Preview Document", tmp_doc.read(), file_name="Preview.docx")
-
-                # Generate all documents
-                left, right = "{{", "}}"
-                with tempfile.TemporaryDirectory() as temp_dir:
-                    word_dir = os.path.join(temp_dir, "Word Documents")
-                    os.makedirs(word_dir)
-                    for idx, row in df.iterrows():
-                        doc = Document(st.session_state.uploaded_template_path)
-                        for para in doc.paragraphs:
-                            for key, val in row.items():
-                                if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
-                                    val = val.strftime("%-m/%-d/%Y")
-                                placeholder = f"{left}{key}{right}"
-                                for run in para.runs:
+                                for key, val in row.items():
+                                    if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
+                                        val = val.strftime("%-m/%-d/%Y")
+                                    placeholder = f"{left}{key}{right}"
                                     if placeholder in run.text:
                                         run.text = run.text.replace(placeholder, str(val))
-                        for table in doc.tables:
-                            for cell in table._cells:
-                                for para in cell.paragraphs:
-                                    for run in para.runs:
-                                        for key, val in row.items():
-                                            if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
-                                                val = val.strftime("%-m/%-d/%Y")
-                                            placeholder = f"{left}{key}{right}"
-                                            if placeholder in run.text:
-                                                run.text = run.text.replace(placeholder, str(val))
-                        name_for_file = output_name_format
-                        for key, val in row.items():
-                            if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
-                                val = val.strftime("%-m/%-d/%Y")
-                            name_for_file = name_for_file.replace(f"{left}{key}{right}", str(val))
-                        filename = name_for_file + ".docx"
-                        doc_path = os.path.join(word_dir, filename)
-                        doc.save(doc_path)
-                    zip_buffer = io.BytesIO()
-                    with zipfile.ZipFile(zip_buffer, "w") as zip_out:
-                        for file in os.listdir(word_dir):
-                            full_path = os.path.join(word_dir, file)
-                            arcname = os.path.join("Word Documents", file)
-                            zip_out.write(full_path, arcname=arcname)
-                    st.success("✅ Word documents generated!")
-                    st.download_button(
-                        label="📦 Download All (Word Only – PDF not supported on Streamlit Cloud)",
-                        data=zip_buffer.getvalue(),
-                        file_name="word_documents.zip",
-                        mime="application/zip"
-                    )
+
+                name_for_file = output_name_format
+                for key, val in row.items():
+                    if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
+                        val = val.strftime("%-m/%-d/%Y")
+                    name_for_file = name_for_file.replace(f"{left}{key}{right}", str(val))
+                filename = name_for_file + ".docx"
+
+                doc_path = os.path.join(word_dir, filename)
+                doc.save(doc_path)
+
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w") as zip_out:
+                for file in os.listdir(word_dir):
+                    full_path = os.path.join(word_dir, file)
+                    arcname = os.path.join("Word Documents", file)
+                    zip_out.write(full_path, arcname=arcname)
+
+            st.success("✅ Word documents generated!")
+            st.download_button(
+                label="📦 Download All (Word Only – PDF not supported on Streamlit Cloud)",
+                data=zip_buffer.getvalue(),
+                file_name="word_documents.zip",
+                mime="application/zip"
+            )
+
+    if template_mode == "Upload New Template":
+        uploaded_template = st.file_uploader("Upload a .docx Template", type="docx")
+        campaign_name = st.selectbox("🏷️ Select Campaign for This Template", CAMPAIGN_OPTIONS)
+        doc_type = st.text_input("📄 Enter Document Type (e.g., HIPAA, Notice, Demand)")
+        excel_file = st.file_uploader("Upload Excel Data (.xlsx)", type="xlsx", key="excel_upload_new")
+        output_name_format = st.text_input("Enter filename format (e.g., HIPAA Notice ({{Client Name}}))")
+
+        if uploaded_template and campaign_name and doc_type:
+            if st.button("Save and Generate"):
+                campaign_safe = campaign_name.replace(" ", "").replace("/", "-")
+                doc_type_safe = doc_type.replace(" ", "")
+                base_name = f"TEMPLATE_{doc_type_safe}_{campaign_safe}"
+                version = 1
+                while os.path.exists(os.path.join(TEMPLATE_FOLDER, f"{base_name}_v{version}.docx")):
+                    version += 1
+                final_filename = f"{base_name}_v{version}.docx"
+                save_path = os.path.join(TEMPLATE_FOLDER, final_filename)
+
+                with open(save_path, "wb") as f:
+                    f.write(uploaded_template.read())
+
+                st.success(f"✅ Saved as {final_filename}")
+                if excel_file and output_name_format:
+                    df = pd.read_excel(excel_file)
+                    process_and_preview(save_path, df, output_name_format)
+
+    elif template_mode == "Select a Saved Template":
+        st.subheader("📂 Select a Saved Template")
+        excluded_templates = {"foia_template.docx", "demand_template.docx"}
+        available_templates = [
+            f for f in os.listdir(TEMPLATE_FOLDER)
+            if f.endswith(".docx") and f not in excluded_templates
+        ]
+
+        search_query = st.text_input("🔍 Search templates by keyword or campaign").lower()
+        filtered_templates = [f for f in available_templates if search_query in f.lower()]
+
+        if not filtered_templates:
+            st.warning("⚠️ No matching templates found.")
+            st.stop()
+
+        template_choice = st.selectbox("Choose Template", filtered_templates)
+        template_path = os.path.join(TEMPLATE_FOLDER, template_choice)
+        excel_file = st.file_uploader("Upload Excel Data (.xlsx)", type="xlsx", key="excel_upload_saved")
+        output_name_format = st.text_input("Enter filename format (e.g., HIPAA Notice ({{Client Name}}))")
+
+        if st.button("Generate Documents"):
+            if excel_file and output_name_format:
+                df = pd.read_excel(excel_file)
+                process_and_preview(template_path, df, output_name_format)
+
+    elif template_mode == "Template Options":
+        st.subheader("⚙️ Template Options")
+        excluded_templates = {"foia_template.docx", "demand_template.docx"}
+        available_templates = [
+            f for f in os.listdir(TEMPLATE_FOLDER)
+            if f.endswith(".docx") and f not in excluded_templates
+        ]
+
+        search_query = st.text_input("🔍 Search for template to manage").lower()
+        filtered_templates = [f for f in available_templates if search_query in f.lower()]
+
+        if filtered_templates:
+            template_choice = st.selectbox("Choose Template to Rename/Delete", filtered_templates)
+            template_path = os.path.join(TEMPLATE_FOLDER, template_choice)
+
+            st.subheader("✏️ Rename Template")
+            new_template_name = st.text_input("New name (no extension)", value=template_choice.replace(".docx", ""))
+            if st.button("Rename Template"):
+                new_path = os.path.join(TEMPLATE_FOLDER, new_template_name + ".docx")
+                if os.path.exists(new_path):
+                    st.warning("⚠️ A file with that name already exists.")
+                else:
+                    os.rename(template_path, new_path)
+                    st.success(f"✅ Renamed to {new_template_name}.docx")
+                    st.rerun()
+
+            st.subheader("🗑️ Delete Template")
+            confirm_delete = st.checkbox("Yes, delete this template permanently.")
+            if st.button("Delete Template") and confirm_delete:
+                os.remove(template_path)
+                st.success(f"✅ Deleted '{template_choice}'")
+                st.rerun()
+
+        else:
+            st.warning("⚠️ No templates found matching your search.")
 
 elif tool == "📖 Instructions & Support":
     st.header("📘 Instructions")
