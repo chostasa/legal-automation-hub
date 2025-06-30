@@ -59,14 +59,15 @@ st.markdown(f"""
 # === Sidebar Navigation - Only visible after login ===
 with st.sidebar:
     st.markdown("### ⚖️ Legal Automation Hub")
-tool = st.radio("Choose Tool", [
-    "📖 Instructions & Support",
-"📄 Batch Doc Generator",
-    "📬 FOIA Requests",
-"📂 Demands",
-    "🚧 Complaint (In Progress)",
-    "🚧 Subpoenas (In Progress)",
-])
+    tool = st.radio("Choose Tool", [  # ✅ inside the sidebar
+        "📖 Instructions & Support",
+        "📄 Batch Doc Generator",
+        "📬 FOIA Requests",
+        "📂 Demands",
+        "🚧 Complaint (In Progress)",
+        "🚧 Subpoenas (In Progress)",
+    ])
+
 
 # === Routing ===
 if tool == "📂 Demands":
