@@ -6,53 +6,26 @@ import io
 import streamlit as st
 
 # === Simple login ===
+import streamlit as st
+
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
     password = st.text_input("Enter Password", type="password")
-    if password == st.secrets["password"]:
+    if password == st.secrets["APP_PASSWORD"]:
         st.session_state.authenticated = True
         st.experimental_rerun()
     else:
         st.stop()
 
-st.title(tool)  # Optional: display selected tool name as header
-
-# Password protection
-def check_password():
-    def password_entered():
-        if st.session_state["password"] == st.secrets["APP_PASSWORD"]:
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]
-        else:
-            st.session_state["password_correct"] = False
-
-
-    if "password_correct" not in st.session_state:
-        st.text_input("Enter password:", type="password", on_change=password_entered, key="password")
-        st.stop()
-    elif not st.session_state["password_correct"]:
-        st.text_input("Enter password:", type="password", on_change=password_entered, key="password")
-        st.error("❌ Incorrect password")
-        st.stop()
-
-check_password()
-
-from scripts.generate_demand import run as run_demand
-from scripts.generate_foia import run as run_foia
-
+# === Setup layout ===
 st.set_page_config(page_title="Legal Automation Hub", layout="wide")
-st.title("⚖️ Legal Automation Hub")
 
-# Sidebar Navigation
-st.sidebar.title("Tools")
-page = st.sidebar.radio("Select a Tool", ["Demands", "FOIA Requests", "Instructions & Support"])
-
-# === Sidebar Tools ===
+# === Sidebar Navigation - ONLY SHOW AFTER LOGIN ===
 with st.sidebar:
-    st.markdown("### 🗂️ Legal Automation Hub")
-    tool = st.radio("Select a Tool", [
+    st.markdown("### 📂 Legal Automation Hub")
+    tool = st.radio("Choose Tool", [
         "🚧 Complaint (In Progress)",
         "🚧 HIPAAs (In Progress)",
         "🚧 FOIAs (In Progress)",
@@ -61,6 +34,24 @@ with st.sidebar:
         "📑 FOIA Requests",
         "📖 Instructions & Support"
     ])
+
+st.title(tool)
+
+# === ROUTING ===
+if tool == "📂 Demands":
+    # show demand form...
+    pass
+
+elif tool == "📑 FOIA Requests":
+    # show FOIA form...
+    pass
+
+elif tool == "📖 Instructions & Support":
+    # show support page...
+    pass
+
+else:
+    st.warning("This section is currently under development.")
 
 # --- Demands Section ---
 if page == "Demands":
