@@ -187,6 +187,24 @@ elif tool == "📄 Batch Doc Generator":
     if generate and excel_file and output_name_format:
         df = pd.read_excel(excel_file)
 
+if df.empty:
+    st.error("⚠️ Your Excel file has no rows. Please check the file and try again.")
+    st.stop()
+
+st.subheader("🔍 Preview First Row of Excel Data")
+st.dataframe(df.head(1))
+
+# Show available columns to debug placeholders
+st.markdown("**Columns in Excel:**")
+st.code(", ".join(df.columns))
+
+# Print preview of generated filenames
+preview_filename = output_name_format
+for key, val in df.iloc[0].items():
+    preview_filename = preview_filename.replace(f"{{{{{key}}}}}", str(val))
+st.markdown("**📄 Preview Filename for First Row:**")
+st.code(preview_filename)
+
         # Show first row preview
         st.subheader("🔍 Preview First Row of Excel Data")
         st.dataframe(df.head(1))
