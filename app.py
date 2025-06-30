@@ -2,8 +2,8 @@ import streamlit as st
 st.set_page_config(page_title="Legal Automation Hub", layout="wide")
 
 # ✅ Correct way to import modules from scripts folder
-from scripts.generate_foia import run_foia
-from scripts.generate_demand import run_demand
+from scripts.run_foia import run_foia
+from scripts.run_demand import run_demand
 
 import pandas as pd
 import os
