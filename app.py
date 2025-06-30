@@ -116,8 +116,6 @@ if tool == "📄 Batch Doc Generator":
 
                 st.success(f"✅ Saved as {final_filename}")
 
-   [previous script unchanged up to this point]
-
     elif template_mode == "Select a Saved Template":
         st.subheader("📂 Select a Saved Template")
         excluded_templates = {"foia_template.docx", "demand_template.docx"}
