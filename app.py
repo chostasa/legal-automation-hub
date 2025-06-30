@@ -6,7 +6,6 @@ import os
 import zipfile
 import io
 import tempfile
-from docx2pdf import convert
 from docx import Document
 
 # === Simple login ===
@@ -130,9 +129,7 @@ elif tool == "📄 Batch Doc Generator":
 
         with tempfile.TemporaryDirectory() as temp_dir:
             word_dir = os.path.join(temp_dir, "Word Documents")
-            pdf_dir = os.path.join(temp_dir, "PDFs")
             os.makedirs(word_dir)
-            os.makedirs(pdf_dir)
 
             for idx, row in df.iterrows():
                 doc = Document(template_file)
@@ -167,22 +164,18 @@ elif tool == "📄 Batch Doc Generator":
                 doc_path = os.path.join(word_dir, filename)
                 doc.save(doc_path)
 
-                pdf_path = os.path.join(pdf_dir, filename.replace(".docx", ".pdf"))
-                convert(doc_path, pdf_path)
-
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w") as zip_out:
-                for folder in [word_dir, pdf_dir]:
-                    for file in os.listdir(folder):
-                        full_path = os.path.join(folder, file)
-                        arcname = os.path.join(os.path.basename(folder), file)
-                        zip_out.write(full_path, arcname=arcname)
+                for file in os.listdir(word_dir):
+                    full_path = os.path.join(word_dir, file)
+                    arcname = os.path.join("Word Documents", file)
+                    zip_out.write(full_path, arcname=arcname)
 
-            st.success("✅ Documents generated!")
+            st.success("✅ Word documents generated!")
             st.download_button(
-                label="📦 Download All (Word + PDFs)",
+                label="📦 Download All (Word Only – PDF not supported on Streamlit Cloud)",
                 data=zip_buffer.getvalue(),
-                file_name="merged_documents.zip",
+                file_name="word_documents.zip",
                 mime="application/zip"
             )
 
