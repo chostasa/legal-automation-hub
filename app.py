@@ -6,7 +6,8 @@ import os
 import zipfile
 import io
 from docx import Document
-
+import tempfile
+from docx2pdf import convert
 
 # === Simple login ===
 if "authenticated" not in st.session_state:
@@ -24,18 +25,17 @@ if not st.session_state.authenticated:
 with st.sidebar:
     st.markdown("### 📂 Legal Automation Hub")
     tool = st.radio("Choose Tool", [
-    "🚧 Complaint (In Progress)",
-    "🚧 Subpoenas (In Progress)",
-    "📂 Demands",
-    "📑 FOIA Requests",
-    "📄 Batch Doc Generator",
-    "📖 Instructions & Support"
-])
-
+        "📂 Demands",
+        "📁 FOIA Requests",
+        "📄 Batch Doc Generator",
+        "📖 Instructions & Support"
+        "🚧 Complaint (In Progress)",
+        "🚧 Subpoenas (In Progress)",
+    ])
 
 # === Routing ===
 if tool == "📂 Demands":
-    st.header("📑 Generate Demand Letters")
+    st.header("📁 Generate Demand Letters")
     with st.form("demand_form"):
         client_name = st.text_input("Client Name")
         defendant = st.text_input("Defendant")
@@ -66,7 +66,7 @@ if tool == "📂 Demands":
         except Exception as e:
             st.error(f"❌ Error: {e}")
 
-elif tool == "📑 FOIA Requests":
+elif tool == "📁 FOIA Requests":
     st.header("📨 Generate FOIA Letters")
     with st.form("foia_form"):
         client_id = st.text_input("Client ID")
@@ -125,55 +125,66 @@ elif tool == "📄 Batch Doc Generator":
     generate = st.button("Generate Documents")
 
     if generate and template_file and excel_file and output_name_format:
-        import pandas as pd
-        from docx import Document
-        import zipfile, io
-
-        # Extract placeholder wrapper
+        df = pd.read_excel(excel_file)
         left, right = "{{", "}}"
 
-        # Read Excel data
-        df = pd.read_excel(excel_file)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            word_dir = os.path.join(temp_dir, "Word Documents")
+            pdf_dir = os.path.join(temp_dir, "PDFs")
+            os.makedirs(word_dir)
+            os.makedirs(pdf_dir)
 
-        # Prepare output buffer
-        docx_buffer = io.BytesIO()
-        zip_out = zipfile.ZipFile(docx_buffer, "w")
+            for idx, row in df.iterrows():
+                doc = Document(template_file)
 
-        # Process each row
-        for idx, row in df.iterrows():
-            doc = Document(template_file)
-
-            for para in doc.paragraphs:
-                for key, val in row.items():
-                    placeholder = f"{left}{key}{right}"
-                    if placeholder in para.text:
-                        para.text = para.text.replace(placeholder, str(val))
-
-            for table in doc.tables:
-                for cell in table._cells:
+                for para in doc.paragraphs:
                     for key, val in row.items():
+                        if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
+                            val = val.strftime("%-m/%-d/%Y")
                         placeholder = f"{left}{key}{right}"
-                        if placeholder in cell.text:
-                            cell.text = cell.text.replace(placeholder, str(val))
+                        for run in para.runs:
+                            if placeholder in run.text:
+                                run.text = run.text.replace(placeholder, str(val))
 
-            name_for_file = output_name_format
-            for key, val in row.items():
-                name_for_file = name_for_file.replace(f"{left}{key}{right}", str(val))
-            filename = name_for_file + ".docx"
+                for table in doc.tables:
+                    for cell in table._cells:
+                        for para in cell.paragraphs:
+                            for run in para.runs:
+                                for key, val in row.items():
+                                    if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
+                                        val = val.strftime("%-m/%-d/%Y")
+                                    placeholder = f"{left}{key}{right}"
+                                    if placeholder in run.text:
+                                        run.text = run.text.replace(placeholder, str(val))
 
-            temp_stream = io.BytesIO()
-            doc.save(temp_stream)
-            zip_out.writestr(filename, temp_stream.getvalue())
+                name_for_file = output_name_format
+                for key, val in row.items():
+                    if pd.api.types.is_datetime64_any_dtype([val]) or isinstance(val, pd.Timestamp):
+                        val = val.strftime("%-m/%-d/%Y")
+                    name_for_file = name_for_file.replace(f"{left}{key}{right}", str(val))
+                filename = name_for_file + ".docx"
 
-        zip_out.close()
-        st.success("✅ Documents generated!")
+                doc_path = os.path.join(word_dir, filename)
+                doc.save(doc_path)
 
-        st.download_button(
-            label="📦 Download All as ZIP",
-            data=docx_buffer.getvalue(),
-            file_name="merged_documents.zip",
-            mime="application/zip"
-        )
+                pdf_path = os.path.join(pdf_dir, filename.replace(".docx", ".pdf"))
+                convert(doc_path, pdf_path)
+
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w") as zip_out:
+                for folder in [word_dir, pdf_dir]:
+                    for file in os.listdir(folder):
+                        full_path = os.path.join(folder, file)
+                        arcname = os.path.join(os.path.basename(folder), file)
+                        zip_out.write(full_path, arcname=arcname)
+
+            st.success("✅ Documents generated!")
+            st.download_button(
+                label="📦 Download All (Word + PDFs)",
+                data=zip_buffer.getvalue(),
+                file_name="merged_documents.zip",
+                mime="application/zip"
+            )
 
 elif tool == "📖 Instructions & Support":
     st.header("📘 Instructions")
